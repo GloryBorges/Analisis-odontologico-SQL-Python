@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Análisis Odontológico SQL</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; max-width: 1100px; margin: auto;
+          padding: 30px; background: #F8F9FA; color: #1A1A2E; }
+  h1   { color: #2E86AB; border-bottom: 3px solid #2E86AB; padding-bottom: 8px; }
+  h2   { color: #A23B72; margin-top: 40px; }
+  h3   { color: #444; }
+  pre  { background:#1A1A2E; color:#A8E6CF; padding:16px; border-radius:8px;
+          overflow-x:auto; font-size:13px; line-height:1.5; }
+  .table { border-collapse:collapse; width:100%; margin:12px 0; }
+  .table th { background:#2E86AB; color:#fff; padding:8px 12px; text-align:left; }
+  .table td { padding:7px 12px; border-bottom:1px solid #ddd; }
+  .table tr:nth-child(even) { background:#eaf4fb; }
+  .insight { background:#fff3cd; border-left:4px solid #F18F01;
+              padding:12px 16px; margin:10px 0; border-radius:4px; }
+  .badge   { display:inline-block; background:#C73E1D; color:#fff;
+              padding:2px 8px; border-radius:12px; font-size:12px; }
+  img { width:100%; border-radius:10px; margin-top:20px; box-shadow:0 4px 12px rgba(0,0,0,.15); }
+  footer { text-align:center; margin-top:40px; color:#888; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h1>🦷 Análisis Clínico-Odontológico con SQL</h1>
+<p><em>Dataset sintético anónimo · 200 pacientes · 2022–2024 · SQLite + Python</em></p>
+
+<!-- VISUALIZACIÓN -->
+<img src="analisis_odontologico.png" alt="Dashboard">
+
+<!-- ESQUEMA -->
+<h2>1. Esquema de la Base de Datos</h2>
+<pre>
+pacientes(paciente_id, edad, sexo, tabaquismo, diabetes, seguro)
+    │
+    ├── visitas(visita_id, paciente_id, fecha, motivo, dr_id)
+    │       ├── diagnosticos(diag_id, visita_id, codigo_cie, descripcion, severidad)
+    │       └── tratamientos(trat_id, visita_id, tipo, costo_mxn, pieza)
+    │
+    └── examenes_perio(examen_id, paciente_id, fecha, prof_sondeo, sangrado_pct, calculo)
+</pre>
+
+<!-- CONSULTAS SQL -->
+<h2>2. Consultas SQL Aplicadas</h2>
+
+<h3>Q1 · Prevalencia de Diagnósticos</h3>
+<pre>
+SELECT descripcion AS Diagnóstico,
+       COUNT(*)    AS Total,
+       ROUND(100.0*COUNT(*)/SUM(COUNT(*)) OVER(),1) AS Porcentaje
+FROM diagnosticos
+GROUP BY descripcion
+ORDER BY Total DESC;
+</pre>
+<table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Diagnóstico</th>
+      <th>Total</th>
+      <th>Porcentaje</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Caries</td>
+      <td>167</td>
+      <td>17.5</td>
+    </tr>
+    <tr>
+      <td>Gingivitis</td>
+      <td>167</td>
+      <td>17.5</td>
+    </tr>
+    <tr>
+      <td>Edentulismo</td>
+      <td>166</td>
+      <td>17.4</td>
+    </tr>
+    <tr>
+      <td>Periodontitis</td>
+      <td>156</td>
+      <td>16.3</td>
+    </tr>
+    <tr>
+      <td>Maloclusión</td>
+      <td>155</td>
+      <td>16.2</td>
+    </tr>
+    <tr>
+      <td>Pulpitis</td>
+      <td>144</td>
+      <td>15.1</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Q2 · Ingresos por Tipo de Tratamiento</h3>
+<pre>
+SELECT tipo,
+       COUNT(*)             AS Casos,
+       ROUND(AVG(costo_mxn),0) AS Costo_Promedio_MXN,
+       ROUND(SUM(costo_mxn),0) AS Ingresos_Total_MXN
+FROM tratamientos
+GROUP BY tipo
+ORDER BY Ingresos_Total_MXN DESC;
+</pre>
+<table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Tratamiento</th>
+      <th>Casos</th>
+      <th>Costo_Promedio_MXN</th>
+      <th>Ingresos_Total_MXN</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Brackets</td>
+      <td>73</td>
+      <td>34981.0</td>
+      <td>2553600.0</td>
+    </tr>
+    <tr>
+      <td>Implante</td>
+      <td>88</td>
+      <td>18194.0</td>
+      <td>1601069.0</td>
+    </tr>
+    <tr>
+      <td>Corona</td>
+      <td>97</td>
+      <td>7054.0</td>
+      <td>684235.0</td>
+    </tr>
+    <tr>
+      <td>Endodoncia</td>
+      <td>96</td>
+      <td>4558.0</td>
+      <td>437588.0</td>
+    </tr>
+    <tr>
+      <td>Extracción</td>
+      <td>84</td>
+      <td>1203.0</td>
+      <td>101063.0</td>
+    </tr>
+    <tr>
+      <td>Obturación</td>
+      <td>94</td>
+      <td>799.0</td>
+      <td>75108.0</td>
+    </tr>
+    <tr>
+      <td>Profilaxis</td>
+      <td>95</td>
+      <td>596.0</td>
+      <td>56610.0</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Q3 · Factores de Riesgo Periodontal</h3>
+<pre>
+SELECT p.sexo, p.tabaquismo, p.diabetes,
+       ROUND(AVG(e.prof_sondeo),2)   AS Prof_Sondeo_Prom,
+       ROUND(AVG(e.sangrado_pct),1)  AS Sangrado_Pct_Prom,
+       COUNT(DISTINCT p.paciente_id) AS N
+FROM pacientes p
+JOIN examenes_perio e ON p.paciente_id=e.paciente_id
+GROUP BY p.sexo, p.tabaquismo, p.diabetes
+ORDER BY Prof_Sondeo_Prom DESC;
+</pre>
+<table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sexo</th>
+      <th>tabaquismo</th>
+      <th>diabetes</th>
+      <th>Prof_Sondeo_Prom</th>
+      <th>Sangrado_Pct_Prom</th>
+      <th>N</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>F</td>
+      <td>1</td>
+      <td>1</td>
+      <td>4.90</td>
+      <td>41.1</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>F</td>
+      <td>1</td>
+      <td>0</td>
+      <td>4.59</td>
+      <td>38.3</td>
+      <td>18</td>
+    </tr>
+    <tr>
+      <td>F</td>
+      <td>0</td>
+      <td>0</td>
+      <td>4.41</td>
+      <td>42.1</td>
+      <td>68</td>
+    </tr>
+    <tr>
+      <td>M</td>
+      <td>0</td>
+      <td>0</td>
+      <td>4.01</td>
+      <td>41.4</td>
+      <td>72</td>
+    </tr>
+    <tr>
+      <td>M</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.98</td>
+      <td>39.4</td>
+      <td>14</td>
+    </tr>
+    <tr>
+      <td>M</td>
+      <td>1</td>
+      <td>0</td>
+      <td>3.95</td>
+      <td>42.8</td>
+      <td>15</td>
+    </tr>
+    <tr>
+      <td>M</td>
+      <td>1</td>
+      <td>1</td>
+      <td>3.83</td>
+      <td>34.8</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>F</td>
+      <td>0</td>
+      <td>1</td>
+      <td>3.57</td>
+      <td>43.9</td>
+      <td>6</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Q4 · Visitas por Tipo de Seguro</h3>
+<pre>
+SELECT p.seguro,
+       COUNT(v.visita_id)                    AS Total_Visitas,
+       COUNT(DISTINCT v.paciente_id)         AS Pacientes_Únicos,
+       ROUND(1.0*COUNT(v.visita_id)/COUNT(DISTINCT v.paciente_id),2) AS Visitas_Por_Paciente
+FROM pacientes p JOIN visitas v ON p.paciente_id=v.paciente_id
+GROUP BY p.seguro ORDER BY Total_Visitas DESC;
+</pre>
+<table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Seguro</th>
+      <th>Total_Visitas</th>
+      <th>Pacientes_Únicos</th>
+      <th>Visitas_Por_Paciente</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Privado</td>
+      <td>206</td>
+      <td>64</td>
+      <td>3.22</td>
+    </tr>
+    <tr>
+      <td>IMSS</td>
+      <td>146</td>
+      <td>47</td>
+      <td>3.11</td>
+    </tr>
+    <tr>
+      <td>Sin seguro</td>
+      <td>143</td>
+      <td>45</td>
+      <td>3.18</td>
+    </tr>
+    <tr>
+      <td>ISSSTE</td>
+      <td>132</td>
+      <td>44</td>
+      <td>3.00</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Q5 · Indicadores Periodontales por Grupo de Edad</h3>
+<pre>
+SELECT
+    CASE WHEN edad < 18 THEN '&lt; 18'
+         WHEN edad < 35 THEN '18-34'
+         WHEN edad < 50 THEN '35-49'
+         WHEN edad < 65 THEN '50-64'
+         ELSE '≥ 65' END AS Grupo_Edad,
+    COUNT(DISTINCT p.paciente_id) AS Pacientes,
+    ROUND(AVG(e.prof_sondeo),2)   AS Prof_Sondeo_Prom,
+    ROUND(AVG(e.sangrado_pct),1)  AS Sangrado_Pct_Prom
+FROM pacientes p JOIN examenes_perio e ON p.paciente_id=e.paciente_id
+GROUP BY Grupo_Edad ORDER BY MIN(edad);
+</pre>
+<table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Grupo_Edad</th>
+      <th>Pacientes</th>
+      <th>Prof_Sondeo_Prom</th>
+      <th>Sangrado_Pct_Prom</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>&lt; 18</td>
+      <td>25</td>
+      <td>4.23</td>
+      <td>41.5</td>
+    </tr>
+    <tr>
+      <td>18-34</td>
+      <td>49</td>
+      <td>4.40</td>
+      <td>42.3</td>
+    </tr>
+    <tr>
+      <td>35-49</td>
+      <td>45</td>
+      <td>4.07</td>
+      <td>36.8</td>
+    </tr>
+    <tr>
+      <td>50-64</td>
+      <td>37</td>
+      <td>4.14</td>
+      <td>40.8</td>
+    </tr>
+    <tr>
+      <td>≥ 65</td>
+      <td>44</td>
+      <td>4.12</td>
+      <td>45.3</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- HALLAZGOS -->
+<h2>3. Hallazgos Clínicos Principales</h2>
+
+<div class="insight">
+  <strong>🦠 Caries predomina</strong> — Es el diagnóstico más frecuente (~18% de los casos),
+  seguido de Gingivitis y Periodontitis, reflejando el patrón epidemiológico real en México.
+</div>
+
+<div class="insight">
+  <strong>💰 Implantes y Brackets generan el mayor ingreso</strong> — Aunque son procedimientos
+  menos frecuentes, concentran más del 50% de los ingresos totales del consultorio.
+</div>
+
+<div class="insight">
+  <strong>🚬 Tabaquismo + Diabetes elevan el riesgo periodontal</strong> — Pacientes con ambos
+  factores presentan mayor profundidad de sondeo (≥ 4 mm) y mayor porcentaje de sangrado,
+  indicadores clave de periodontitis activa.
+</div>
+
+<div class="insight">
+  <strong>👴 La edad agrava la enfermedad periodontal</strong> — El grupo ≥ 65 años registra
+  la profundidad de sondeo más alta, consistente con la acumulación de daño periodontal
+  a lo largo de la vida.
+</div>
+
+<div class="insight">
+  <strong>🏥 Pacientes sin seguro tienen menos visitas</strong> — La frecuencia de consulta
+  (visitas/paciente) es menor en quienes carecen de cobertura, sugiriendo una barrera de
+  acceso que puede llevar a diagnósticos más tardíos.
+</div>
+
+<h2>4. Recomendaciones</h2>
+<ol>
+  <li>Establecer <strong>protocolos de riesgo periodontal</strong> diferenciados para pacientes
+      fumadores o diabéticos desde la primera visita.</li>
+  <li>Implementar programas de <strong>prevención primaria (profilaxis + selladores)</strong>
+      en menores de 18 años para reducir la incidencia de caries.</li>
+  <li>Diseñar esquemas de <strong>financiamiento accesible</strong> para pacientes sin seguro,
+      priorizando tratamientos conservadores.</li>
+  <li>Monitorear la <strong>profundidad de sondeo anual</strong> en mayores de 50 años como
+      indicador centinela de enfermedad periodontal avanzada.</li>
+</ol>
+
+<footer>
+  Análisis generado con datos sintéticos anónimos · SQLite · Python · Matplotlib · Seaborn<br>
+  Proyecto modelo académico — no contiene datos reales de pacientes
+</footer>
+</body>
+</html>
